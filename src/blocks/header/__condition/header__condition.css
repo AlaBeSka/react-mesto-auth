@@ -1,0 +1,14 @@
+.header__condition {
+  margin-top: 7px;
+  display: flex;
+  gap: 20px;
+  max-height: 100%;
+}
+
+@media screen and (max-width: 700px) {
+  .header__condition {
+    font-size: 14px;
+    line-height: 17px;
+    margin-right: 20px;
+  }
+}
