@@ -17,6 +17,7 @@ import Login from "./Login";
 import Register from "./Register";
 import ProtectedRoute from "./ProtectedRoute";
 import * as auth from "../utils/Auth";
+import InfoTooltip from "./InfoTooltip";
 
 const api = new Api(options);
 
@@ -33,6 +34,9 @@ function App() {
   const [loggedIn, setLoggedIn] = React.useState(false);
   const [userData, setUserData] = React.useState("");
   const navigate = useNavigate();
+  const [isSuccess, setIsSuccess] = React.useState(true);
+  const [isSuccessPopupOpen, setIsSuccessPopupOpen] = React.useState(false);
+  const [errorMassage, setErrorMessage] = React.useState("");
 
   const isOpen =
     isEditAvatarPopupOpen ||
@@ -132,6 +136,16 @@ function App() {
     setIsEditProfilePopupOpen(false);
     setIsAddPlacePopupOpen(false);
     setSelectedCard({});
+    setIsSuccessPopupOpen(false);
+  }
+
+  function regSuccess(successed) {
+    setIsSuccessPopupOpen(true);
+    setIsSuccess(successed);
+  }
+
+  function regError(err) {
+    setErrorMessage(err);
   }
 
   const checkToken = () => {
@@ -155,19 +169,52 @@ function App() {
   }, []);
 
   function cbRegister(formValue) {
+    setIsLoading(true);
     auth
       .register(formValue.email, formValue.password)
       .then((res) => {
-        if (res) {
-          navigate("/sign-in", { replace: true });
+        if (res.error === "Пользователь с таким email уже зарегистрирован") {
+          regSuccess(false);
+        } else {
+          console.log(res);
+          regSuccess(true);
+          navigate("/signin", { replace: true });
+        }
+      })
+      .catch((err) => {
+        if (err.response && err.response.status === 400) {
+          regSuccess(false);
+          console.log("Error: Email already taken");
+        } else {
+          regError(err);
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }
+
+  function login(formValue) {
+    setIsLoading(true);
+
+    auth
+      .authorize(formValue.email, formValue.password)
+      .then((res) => {
+        if (res.token) {
+          console.log(res);
+          setLoggedIn(true);
+          navigate("/", { replace: true });
+          setUserData(formValue.email);
+        } else {
+          throw new Error("Неверный формат ответа сервера");
         }
       })
       .catch((err) => {
         console.log(err);
-      });
+        regSuccess(false);
+      })
+      .finally(() => setIsLoading(false));
   }
 
-  function Logout() {
+  function logout() {
     setLoggedIn(false);
     setUserData("");
     localStorage.removeItem("jwt");
@@ -176,9 +223,19 @@ function App() {
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
-        <Header email={userData} onLogout={Logout} />
+        <InfoTooltip />
+        <Header email={userData} onLogout={logout} />
         <Routes>
-          <Route path="/" element={loggedIn ? (<Navigate to="/mesto-react" replace />) : (<Navigate to="/sign-in" replace />) } />
+          <Route
+            path="/"
+            element={
+              loggedIn ? (
+                <Navigate to="/mesto-react" replace />
+              ) : (
+                <Navigate to="/signin" replace />
+              )
+            }
+          />
           <Route
             path="/mesto-react"
             element={
@@ -195,8 +252,22 @@ function App() {
               />
             }
           />
-          <Route path="sign-up" element={<Register onRegister = {cbRegister}/>} />
-          <Route path="sign-in" element={<Login />} />
+          <Route
+            path="/signup"
+            element={
+              <Register
+                onRegister={cbRegister}
+                isLoading={isLoading}
+                isLogin={loggedIn}
+              />
+            }
+          />
+          <Route
+            path="/signin"
+            element={
+              <Login onLogin={login} isLoading={isLoading} isLogin={loggedIn} />
+            }
+          />
         </Routes>
         <Footer />
         <EditProfilePopup
@@ -224,6 +295,12 @@ function App() {
           submitText="Да"
         ></PopupWithForm>
         <ImagePopup card={selectedCard} onClose={closeAllPopups} />
+        <InfoTooltip
+          isOpen={isSuccessPopupOpen}
+          onClose={closeAllPopups}
+          isSuccess={isSuccess}
+          errorMessage={errorMassage}
+        />
       </div>
     </CurrentUserContext.Provider>
   );
