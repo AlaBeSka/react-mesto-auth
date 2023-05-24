@@ -230,14 +230,14 @@ function App() {
             path="/"
             element={
               loggedIn ? (
-                <Navigate to="/mesto-react" replace />
+                <Navigate to="/react-mesto-auth" replace />
               ) : (
                 <Navigate to="/signin" replace />
               )
             }
           />
           <Route
-            path="/mesto-react"
+            path="/react-mesto-auth"
             element={
               <ProtectedRoute
                 element={Main}
