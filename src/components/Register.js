@@ -20,7 +20,7 @@ function Register({ onRegister, isLogin, isLoading }) {
 
   return (
     <div className="register">
-      <form className="login__form" noValidate onSubmit={handleSubmit}>
+      <form className="login__form" onSubmit={handleSubmit}>
         <h2 className="login__title">Регистрация</h2>
         <input
           className="login__field"

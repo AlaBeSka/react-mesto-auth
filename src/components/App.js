@@ -1,6 +1,5 @@
 import React from "react";
 import { Api } from "../utils/Api";
-import "../App.css";
 import Header from "./Header.js";
 import Main from "./Main.js";
 import Footer from "./Footer.js";
@@ -12,7 +11,7 @@ import AddPlacePopup from "./AddPlacePopup";
 import { options } from "../utils/constant";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
 import { Route, Routes } from "react-router-dom";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import Login from "./Login";
 import Register from "./Register";
 import ProtectedRoute from "./ProtectedRoute";
@@ -34,9 +33,11 @@ function App() {
   const [loggedIn, setLoggedIn] = React.useState(false);
   const [userData, setUserData] = React.useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSuccess, setIsSuccess] = React.useState(true);
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = React.useState(false);
   const [errorMassage, setErrorMessage] = React.useState("");
+  const [cardToDelete, setCardToDelete] = React.useState(null);
 
   const isOpen =
     isEditAvatarPopupOpen ||
@@ -66,7 +67,7 @@ function App() {
         setCards(cards);
       })
       .catch((err) => console.log(err));
-  }, []);
+  }, [loggedIn]);
 
   function handleCardLike(card) {
     const isLiked = card.likes.some((i) => i._id === currentUser._id);
@@ -84,15 +85,27 @@ function App() {
   }
 
   function handleDeleteCard(card) {
-    api
-      .deleteCard(card._id)
-      .then(() => {
-        const index = cards.findIndex((c) => c._id === card._id);
-        const newCards = [...cards];
-        newCards.splice(index, 1);
-        setCards(newCards);
-      })
-      .catch((err) => console.log(err));
+    setCardToDelete(card);
+  }
+
+  function confirmDeleteCard(e) {
+    e.preventDefault();
+    if (cardToDelete) {
+      setIsLoading(true);
+      api
+        .deleteCard(cardToDelete._id)
+        .then(() => {
+          const index = cards.findIndex((c) => c._id === cardToDelete._id);
+          const newCards = [...cards];
+          newCards.splice(index, 1);
+          setCards(newCards);
+        })
+        .catch((err) => console.log(err))
+        .finally(() => {
+          setCardToDelete(null);
+          setIsLoading(false);
+        });
+    }
   }
 
   function handleUpdateUser(data) {
@@ -220,6 +233,10 @@ function App() {
     localStorage.removeItem("jwt");
   }
 
+  if (!loggedIn && location.pathname !== "/signin" && location.pathname !== "/signup") {
+    return <Navigate to="/signin" replace />;
+  }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
@@ -227,17 +244,16 @@ function App() {
         <Header email={userData} onLogout={logout} />
         <Routes>
           <Route
-            path="/"
             element={
               loggedIn ? (
-                <Navigate to="/react-mesto-auth" replace />
+                <Navigate to="/" replace />
               ) : (
                 <Navigate to="/signin" replace />
               )
             }
           />
           <Route
-            path="/react-mesto-auth"
+            path="/"
             element={
               <ProtectedRoute
                 element={Main}
@@ -292,7 +308,10 @@ function App() {
           name="delete-card-form"
           className="delete-card"
           title="Вы уверены?"
-          submitText="Да"
+          submitText={isLoading ? "Удаление..." : "Да"}
+          isOpen={!!cardToDelete}
+          onClose={() => setCardToDelete(null)}
+          onSubmit={confirmDeleteCard}
         ></PopupWithForm>
         <ImagePopup card={selectedCard} onClose={closeAllPopups} />
         <InfoTooltip

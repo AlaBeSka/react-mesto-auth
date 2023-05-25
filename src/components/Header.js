@@ -17,14 +17,6 @@ function Header({ email, onLogout }) {
             }
           />
           <Route
-            path="/react-mesto-auth"
-            element={
-              <Link onClick={onLogout} to="/signin" className="header__link">
-                Выйти
-              </Link>
-            }
-          />
-          <Route
             path="/signin"
             element={
               <Link to="/signup" className="header__link">
