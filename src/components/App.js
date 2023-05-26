@@ -61,12 +61,14 @@ function App() {
   }, [isOpen]);
 
   React.useEffect(() => {
-    Promise.all([api.getInfoProfile(), api.getInitialCards()])
-      .then(([data, cards]) => {
-        setCurrentUser(data);
-        setCards(cards);
-      })
-      .catch((err) => console.log(err));
+    if (loggedIn) {
+      Promise.all([api.getInfoProfile(), api.getInitialCards()])
+        .then(([data, cards]) => {
+          setCurrentUser(data);
+          setCards(cards);
+        })
+        .catch((err) => console.log(err));
+    }
   }, [loggedIn]);
 
   function handleCardLike(card) {
@@ -233,7 +235,11 @@ function App() {
     localStorage.removeItem("jwt");
   }
 
-  if (!loggedIn && location.pathname !== "/signin" && location.pathname !== "/signup") {
+  if (
+    !loggedIn &&
+    location.pathname !== "/signin" &&
+    location.pathname !== "/signup"
+  ) {
     return <Navigate to="/signin" replace />;
   }
 
